@@ -22,3 +22,10 @@ Codex prepares setup/analyze/world/volume/DPO outlines. User switches to `claude
 
 ## Safety
 Do not merge this draft PR until those checks pass. `main` unchanged.
+
+## 2026-10-14 additional implementation and verification
+- Added `migrate_legacy_outline.py`: preview by default, `--write` backs up source to `.before-dpo.bak` and refuses to overwrite an existing backup; unmapped details marked for author review. Migration smoke test is green.
+- `build_dpo_prompt.py` now enforces seven tracking sections, reads prior chapter tail (for chapter 2+), returns context/constraints as controller-only metadata, and composes model-card four-section writer user text. This is **not** automatic semantic consistency verification.
+- Updated DPO reference-gate and outline structural tests to match the approved replacement format, instead of falsely testing the removed nine-field contract.
+- Synced OpenCode narrative writer agent and corrected metadata/static references; DPO-only smoke and OpenCode synchronization have passed in GitHub Actions.
+- Still blocked from claiming end-to-end completeness: original cross-platform/release workflows have failures from remaining legacy assumptions; other Skills, agents, hooks, and chapter transaction integration need audit; local `claudeqwen`/LoRA inheritance can only be verified on user's Windows environment.
