@@ -30,4 +30,4 @@ steps: 12
 **只可写入**调用方指定的临时正文文件 dpo_draft.md，不修改 `大纲/`、`设定/`、`追踪/` 或正式 `正文/`。不能运行 Tracking Commit；不自行扩写下一章。
 遇到工具失败、上下文缺失或写作无法完成时停止并明确反馈，禁止声称写完。完成后只简报临时文件路径及是否截断。
 
-在 OpenCode 中规范参考路径为 `{项目根}/skills/story-setup/references/agent-references/`；本写手默认不加载参考文件。
+规范参考路径：`{项目根}/skills/story-setup/references/agent-references/`；本 DPO 写手不默认加载参考文件。
