@@ -23,7 +23,7 @@ class DPOOnlySmoke(unittest.TestCase):
 ## 章节控制
 - 所属卷：第一卷
 - 剧情单元：L1-01
-- 目标字数：2500
+- 字数目标：2500
 - 字数口径：visible_chars_v1
 - 视角：第三人称紧贴许渡
 - 章节目标：踏入废渠
