@@ -1,0 +1,24 @@
+name: DPO-only smoke
+on:
+  pull_request:
+    paths:
+      - "skills/story-long-write/**"
+      - "skills/story-setup/references/templates/agents/narrative-writer.md"
+      - "tests/test_dpo_only_smoke.py"
+      - ".github/workflows/dpo-only-smoke.yml"
+  push:
+    branches: [feature/dpo-only-story]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python -m unittest discover -s tests -p test_dpo_only_smoke.py -v
+      - run: python -m py_compile skills/story-long-write/scripts/build_dpo_prompt.py skills/story-long-write/scripts/build_architect_brief.py
+      - run: node --check skills/story-long-write/scripts/check-outline-contract.js
