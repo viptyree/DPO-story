@@ -37,6 +37,11 @@ description: "玄幻 DPO 长篇小说规划与正文：Codex 负责开书、设�
 5. 主会话保存正式正文，执行 `storyctl.py chapter check`，修复 blocking、人工判断 advisory；`tracking_commit.py draft` 和 `storyctl.py chapter commit` 成功才完成。
 6. 报告正文字数、已兑现剧情和追踪结果；无作者授权不写下一章。
 
+> **新增物三级**（规划和写作共用）：
+> - **直接写**：微动作、过场、一次性路人、短对话和环境细节，不改变承诺与设定；无需记录。
+> - **写了要报**：具名角色、复用的地点属性、势力、能力形态、关系变化、伏笔与跨章承诺，向主控申报并登记。
+> - **先问作者**：新主线或反转、金手指规则、境界上限、真相与伏笔结算、收益归属、卷级底牌与已定决策冲突；未确认不得写。
+>
 ## 原版系统保留的价值
 - `story-setup` 部署 Agents/Hooks，`story-long-analyze` 做对标拆解。
 - `storyctl.py` 质量检查、`tracking_commit.py` 权威事务、`追踪/上下文.md` 长篇续接状态继续有效。
