@@ -51,3 +51,6 @@ metadata: {"openclaw":{"source":"https://github.com/viptyree/oh-story-claudecode
 ## 模型卡
 https://huggingface.co/JiangLing-js/Qwen3.8-27B-Chinese-Xuanhuan-Novel-Writer-DPO
 模型卡示例的 System Prompt 为「你是一名中文长篇小说写作助手，只输出小说正文。」；User 使用四段式 `〖人物状态〗`、`〖前情〗`、`〖事件骨架〗`、`〖写作要求〗`。本 Skill 是 Claude Code 宿主交接，模型实际 wire-format 不能仅凭文字配置假定等同模型卡；必须实测。
+
+## 正文退化检测
+正文由 `storyctl.py chapter check` 统一调用包括 `check-degeneration.js` 在内的退化检测工具；不另行跳过或手动略过检查。
