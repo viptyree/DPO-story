@@ -32,7 +32,6 @@ def convert(original):
  overview=subsection(original,"内容概括")
  relationship=subsection(original,"人物关系和出场顺序")
  title=heading.group(1).strip()
- if not re.search(r"^第\s*\d+章",heading.group(0)):raise ValueError("无章号")
  number=re.search(r"第\s*(\d+)\s*章",heading.group(0)).group(1)
  return f"""# 第{number}章：{title}
 
