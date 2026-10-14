@@ -25,7 +25,7 @@ if(!match){issues.push('缺标题：'+headings[i]);continue}
 const start=match.index+match[0].length;const next=s.indexOf('\n## ',start);blocks[headings[i]]=s.slice(start,next===-1?s.length:next).trim();
 if(!blocks[headings[i]])issues.push('空内容：'+headings[i]);
 }
-for(const k of ['所属卷','剧情单元','目标字数','字数口径','视角','章节目标','目标情绪','章尾停笔点']){
+for(const k of ['所属卷','剧情单元','字数目标','字数口径','视角','章节目标','目标情绪','章尾停笔点']){
 if(!new RegExp('^\\s*[-*]\\s*'+k+'\\s*[：:]\\s*\\S+','m').test(blocks['章节控制']||''))issues.push('缺章节控制字段：'+k)
 }
 if(!/visible_chars_v1/.test(blocks['章节控制']||''))issues.push('字数口径必须为 visible_chars_v1');
