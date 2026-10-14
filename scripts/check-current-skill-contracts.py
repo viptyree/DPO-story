@@ -804,9 +804,14 @@ def spawn_preflight_findings(
     """
 
     if 'version: 2.0.0-dpo' in text:
-        required_dpo = [r'agents_version', r'Notice: agents bundle 版本不匹配', r'不启用 solo/direct']
+        required_dpo = [
+            r'\x60agents_version: {}\x60'.format(manifest.agents_version),
+            r'Notice: agents bundle 版本不匹配',
+            r'不启用 solo/direct',
+        ]
         missing_dpo = [part for part in required_dpo if re.search(part, text) is None]
-        return [Finding('spawn-agents-version-preflight', 'DPO agent preflight missing ' + ', '.join(missing_dpo), path)] if missing_dpo else []
+        return [Finding('spawn-agents-version-preflight',
+                        'DPO agent preflight missing ' + ', '.join(missing_dpo), path)] if missing_dpo else []
     current = str(manifest.agents_version)
     required = (
         (r"`agents_version:\s*{}`".format(current), "pin the current agents_version"),
