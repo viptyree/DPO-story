@@ -54,3 +54,6 @@ https://huggingface.co/JiangLing-js/Qwen3.8-27B-Chinese-Xuanhuan-Novel-Writer-DP
 
 ## 正文退化检测
 正文由 `storyctl.py chapter check` 统一调用包括 `check-degeneration.js` 在内的退化检测工具；不另行跳过或手动略过检查。
+
+## 子 Agent 部署预检
+读取 `.story-deployed` 的 `agents_version`，当前基线为 `agents_version: 34`。版本不匹配时照常按文件存在性检查并 spawn；向作者用白话提示重新执行 story-setup。技术细节只进末尾「技术备注」：`Notice: agents bundle 版本不匹配`。版本号大于 34 时额外提示先更新 oh-story-claudecode。若 agent 文件缺失或运行时不暴露 custom agent，停止正文写作（DPO-only 不启用 solo/direct 回退），技术备注记 `Fallback: writer unavailable -> blocked`。 
