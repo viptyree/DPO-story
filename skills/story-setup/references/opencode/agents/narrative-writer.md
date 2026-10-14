@@ -10,16 +10,16 @@ permissions:
     effect: allow
   - action: glob
     resource: "*"
-    effect: deny
+    effect: allow
   - action: grep
     resource: "*"
-    effect: deny
+    effect: allow
   - action: edit
     resource: "*"
     effect: allow
   - action: shell
     resource: "*"
-    effect: deny
+    effect: allow
 steps: 12
 ---
 
