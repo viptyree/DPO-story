@@ -1,7 +1,8 @@
 ---
 name: story-long-write
 version: 2.0.0-dpo
-description: "玄幻 DPO 长篇小说规划与正文：Codex 负责开书、设定、卷纲、DPO细纲；claudeqwen 负责通过 narrative-writer 调用本地 DPO LoRA 写指定章节。"\nmetadata: {"openclaw":{"source":"https://github.com/viptyree/oh-story-claudecode"}}
+description: "玄幻 DPO 长篇小说规划与正文：Codex 负责开书、设定、卷纲、DPO细纲；claudeqwen 负责通过 narrative-writer 调用本地 DPO LoRA 写指定章节。"
+metadata: {"openclaw":{"source":"https://github.com/viptyree/oh-story-claudecode"}}
 ---
 # story-long-write｜DPO-only 玄幻长篇
 
