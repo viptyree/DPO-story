@@ -2,7 +2,7 @@
 name: narrative-writer
 description: "Qwen3.8 玄幻 DPO LoRA 专用正文写手；仅由 claudeqwen 调用。"
 model: inherit
-tools: [Read, Write, Edit]
+tools: [Read, Glob, Grep, Write, Edit, Bash]
 maxTurns: 12
 ---
 # DPO 专用 narrative-writer
