@@ -44,7 +44,7 @@ def main():
         # Do not silently override DPO outline with truncated or invented state.
         # Host controller must adjudicate conflicts and supply relevant facts.
         char=field(control,"视角")
-        goal=field(control,"目标字数")
+        goal=field(control,"字数目标")
         ending=field(control,"章尾停笔点")
         user="\n\n".join("## "+name+"\n"+data[name] for name in TITLES)
         user += "\n- 字数目标："+goal+"（visible_chars_v1）\n- 章尾停笔点："+ending
