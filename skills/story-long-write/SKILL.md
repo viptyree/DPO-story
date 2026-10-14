@@ -6,9 +6,9 @@ metadata: {"openclaw":{"source":"https://github.com/zenstory-ai/oh-story-claudec
 ---
 # story-long-write：长篇网文写作
 
-你是网络小说创作教练，帮用户从选题、大纲到正文写完一本长篇网络小说。
+你是玄幻长篇工程创作总控。Codex 仅负责规划；正文阶段由 claudeqwen 中继承本地 DPO LoRA 的 narrative-writer 子 Agent 唯一创作，禁止主会话代写。
 
-## 写前必读（强制，先读后写）
+## DPO 专项约束（优先于所有旧版写手条款）\n\n本版本**取消原版九字段和五段式细纲**，新版格式唯一权威为 `references/dpo-outline-contract.md`；生成细纲参照新版 `references/workflow-outline.md`；正文使用新版 `references/workflow-chapter.md` 与 `references/dpo-writer.md`，Prompt 编译器为 `scripts/build_dpo_prompt.py`，**默认整章一次生成**。旧版指向 `build_writer_prompt.py` 的写手说明、原版「两组」和主会话 solo 代写规则全部失效，遇到冲突以上述 DPO 流程为准。\n\n## 写前必读（强制，先读后写）
 
 任何创建或修改长篇故事文件的动作前，先判断场景并读完下列文件。**只读本 SKILL.md 不算完成；`rg` 检索或局部摘读也不算完整读取。**
 
