@@ -56,6 +56,29 @@ class DPOOnlySmoke(unittest.TestCase):
             for k in ("〖人物状态〗","〖前情〗","〖事件骨架〗","〖写作要求〗"):self.assertIn(k,j["user"])
             self.assertNotIn("长篇追踪约束",j["user"])
             self.assertTrue((p/".story/work/第001章/dpo_prompt.json").is_file())
+    def test_migration_dry_run_does_not_touch_source(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/"细纲_第001章.md"
+            original="""### 第1章：测试
+- 字数目标：2500
+- 字数口径：visible_chars_v1
+- 单元ID/位置：L1-01
+- 主角目标/关键选择：下渠
+- 本章禁止提前释放：胜负
+#### 情节细化
+| # | 情节点 | 功能 | 边界 |
+|---|---|---|---|
+| 1 | 许渡踏入废渠 | 选择 | 不破境 |
+"""
+            p.write_text(original, encoding="utf-8")
+            v=subprocess.run([sys.executable,str(S/"migrate_legacy_outline.py"),str(p)],
+                             capture_output=True,text=True,encoding="utf-8")
+            self.assertEqual(v.returncode,0,v.stderr)
+            self.assertIn("## 〖事件骨架〗",v.stdout)
+            self.assertIn("【待作者",v.stdout)
+            self.assertEqual(p.read_text(encoding="utf-8"),original)
+            self.assertFalse(p.with_suffix(".md.before-dpo.bak").exists())
+
     def test_rejects_old_outline(self):
         if not shutil.which("node"):self.skipTest("node unavailable")
         with tempfile.TemporaryDirectory() as d:
