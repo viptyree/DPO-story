@@ -17,7 +17,7 @@ class DPOOnlySmoke(unittest.TestCase):
             self.skipTest("node unavailable")
         with tempfile.TemporaryDirectory() as d:
             p=Path(d);(p/"大纲").mkdir();(p/"追踪").mkdir()
-            (p/"追踪"/"上下文.md").write_text("## 核心角色状态\n许渡尚未破境",encoding="utf-8")
+            (p/"追踪"/"上下文.md").write_text("## 当前位置\n废渠旁\n## 长期约束\n不破境\n## 核心角色状态\n许渡尚未破境\n## 活跃伏笔\n活脉\n## 近三章速记\n山门受袭\n## 下一章承诺\n继续护阵\n## 连贯性风险\n不得提前揭露",encoding="utf-8")
             (p/"大纲"/"细纲_第001章.md").write_text("""# 第1章：山门将碎时，他踏进了废渠
 
 ## 章节控制
