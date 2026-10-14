@@ -18,3 +18,6 @@ DPO Prompt 文件：{书目录}/.story/work/第NNN章/dpo_prompt.json
 
 ## 其他 agents
 `story-architect`、`character-designer`、`story-explorer`、`consistency-checker`、`chapter-extractor`、`story-researcher` 继续执行原版非正文职责；其任务包需要同步消费 DPO 新细纲而非九字段。不得允许非 DPO 写手写正式正文。
+
+### 对标资料缺失处理
+story-explorer 返回 `profile_missing` 且 `custom_style` 为真时继续按本书 `设定/文风.md` 写作，不把缺失误判成 benchmark_book_missing；否则按原版停下修复流程处理。
