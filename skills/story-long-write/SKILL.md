@@ -34,7 +34,7 @@ metadata: {"openclaw":{"source":"https://github.com/viptyree/oh-story-claudecode
 1. `tracking_commit.py check` 与 DPO 细纲校验；缺输入停止并修复，不绕过。
 2. 从实际追踪、上一章结尾、当前卷纲单元和必要设定准备本章上下文；若细纲状态与权威追踪冲突，先修纲。
 3. `scripts/build_dpo_prompt.py --project {书目录} --chapter N --out`，主会话审核并补齐必要相关事实，确保四段式输入不丢失边界。
-4. `narrative-writer` **默认整章一次生成**，写临时正文 `.story/work/第NNN章/dpo_draft.md`，不得直接改追踪或正文权威。
+4. `narrative-writer` **默认整章一次生成**，写入本章书内工作目录的临时草稿文件（文件名 dpo_draft.md），不得直接改追踪或正文权威。
 5. 主会话保存正式正文，执行 `storyctl.py chapter check`，修复 blocking、人工判断 advisory；`tracking_commit.py draft` 和 `storyctl.py chapter commit` 成功才完成。
 6. 报告正文字数、已兑现剧情和追踪结果；无作者授权不写下一章。
 
