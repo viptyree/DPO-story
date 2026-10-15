@@ -199,6 +199,7 @@ def build(task: str, volume: int | None, chapters: tuple[int, int] | None,
                 "每章一句核心事件、要作者定的事（没有写「无」）。")
         basics = read_reference("character-basics.md")
         parts = [("workflow-outline.md", read_reference("workflow-outline.md")),
+                 ("dpo-outline-contract.md（唯一细纲模板）", read_reference("dpo-outline-contract.md")),
                  ("character-basics.md（主角卡、配角卡）", section(basics, "第1节：主角卡", "第3节"))]
         if first <= 3:
             parts.append(("opening-design.md", read_reference("opening-design.md")))

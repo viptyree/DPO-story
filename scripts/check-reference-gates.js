@@ -23,17 +23,30 @@ function readSkill(name) {
 
 const long = readSkill('story-long-write')
 const longLines = long.split(/\r?\n/)
-const longGateLine = longLines.findIndex((line) => line.includes('## 写前必读')) + 1
-assert(longGateLine > 0 && longGateLine <= 20, `long 写前必读 gate must stay in first screen, got line ${longGateLine}`)
-for (const reference of [
-  'workflow-setup.md', 'workflow-volume.md', 'workflow-outline.md', 'workflow-chapter.md', 'workflow-daily.md', 'workflow-revision.md', 'long-format.md',
-  'writing-craft.md', 'long-chapter-quality.md', 'long-chapter-hooks.md', 'long-suspense.md',
-  'long-reversal.md',
-]) {
-  assert(long.includes(reference), `long gate must route ${reference}`)
+if (/version: 2\.0\.0-dpo/.test(long)) {
+  // DPO-only replaces the generic long-form prose reference gate.
+  // Pin its new read-before-write gate rather than demanding disabled prose guides.
+  const line = longLines.findIndex((x) => x.includes('## 路由与先读资料')) + 1
+  assert(line > 0 && line <= 25, 'DPO chapter gate must be visible in first screen')
+  for (const ref of ['workflow-setup.md', 'workflow-volume.md', 'workflow-outline.md',
+    'dpo-outline-contract.md', 'workflow-chapter.md', 'dpo-writer.md',
+    'agent-calls.md', 'workflow-daily.md', 'workflow-revision.md']) {
+    assert(long.includes(ref), 'DPO gate must route ' + ref)
+  }
+  assert.match(long, /model: inherit/)
+  assert.match(long, /默认整章一次生成/)
+  assert.match(long, /禁止主会话.*代写|不启用 solo\/direct/)
+} else {
+  const longGateLine = longLines.findIndex((line) => line.includes('## 写前必读')) + 1
+  assert(longGateLine > 0 && longGateLine <= 20)
+  for (const ref of ['workflow-setup.md', 'workflow-volume.md', 'workflow-outline.md',
+    'workflow-chapter.md', 'workflow-daily.md', 'workflow-revision.md',
+    'long-format.md', 'writing-craft.md', 'long-chapter-quality.md',
+    'long-chapter-hooks.md', 'long-suspense.md', 'long-reversal.md']) {
+    assert(long.includes(ref))
+  }
+  assert.match(long, /记下本轮约束/)
 }
-// 写前原样记录本轮明确约束（字数、必发生、禁止发生、停笔点）的行为锚点。
-assert.match(long, /记下本轮约束/)
 
 const short = readSkill('story-short-write')
 const shortLines = short.split(/\r?\n/)
