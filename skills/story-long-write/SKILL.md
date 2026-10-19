@@ -1,15 +1,15 @@
 ---
 name: story-long-write
-version: 2.0.0-dpo
-description: "玄幻 DPO 长篇小说规划与正文：Codex 负责开书、设定、卷纲、DPO细纲；claudeqwen 负责通过 narrative-writer 调用本地 DPO LoRA 写指定章节。"
+version: 2.1.0-dpo
+description: "沿用 oh-story 的长篇流程与追踪骨架，适配 Qwen3.8 27B 玄幻 DPO LoRA：Codex 做规划，claudeqwen 通过 narrative-writer 写正文。"
 metadata: {"openclaw":{"source":"https://github.com/viptyree/oh-story-claudecode"}}
 ---
 # story-long-write｜DPO-only 玄幻长篇
 
 ## 唯一职责分工
 - **Codex（GPT-6）**：开书、定设定、卷纲、DPO 细纲、规划校验；**禁止直接代写正式正文**。
-- **claudeqwen**：在小说根目录启动，接受 `/story-long-write 写第N章`；主会话检查状态、编译 Prompt、调用本地 DPO 写手、验收并提交。
-- **narrative-writer**：`model: inherit`，只负责按 DPO 模型卡形式写正文。继承是否指向加载 LoRA 的本地服务必须在用户本机验证。无写手或路由不明则停下，**不启用 solo/direct 正文回退**。
+- **Claude Code / claudeqwen**：接受 `/story-long-write 开始写第一章` 或 `写第N章`；主会话执行确定性管线、验收并提交。
+- **narrative-writer**：保留 oh-story 的专用写手角色，`model: inherit`；写手内部调用 `chapter_pipeline.py` → `generate_dpo_draft.py` → 本地 DPO LoRA 服务。正文采用模型卡 System/User 四段式，按 `references/scene-handoff.md` 逐场生成、主控审阅后承接。主会话不手写正文。
 - 其他原版 Skills、Agents、Hooks 维持其非正文职责，不因为本 Skill 改版而删除。
 
 ## 路由与先读资料
@@ -31,12 +31,12 @@ metadata: {"openclaw":{"source":"https://github.com/viptyree/oh-story-claudecode
 卷纲、设定、时间线、角色档案与追踪状态仍保留原版磁盘协议。卷纲使用 `outline_view.py --unit` 定点读取。
 
 ## DPO 正文闭环
-1. `tracking_commit.py check` 与 DPO 细纲校验；缺输入停止并修复，不绕过。
-2. 从实际追踪、上一章结尾、当前卷纲单元和必要设定准备本章上下文；若细纲状态与权威追踪冲突，先修纲。
-3. `scripts/build_dpo_prompt.py --project {书目录} --chapter N --out`，主会话审核并补齐必要相关事实，确保四段式输入不丢失边界。
-4. `narrative-writer` **默认整章一次生成**，写入本章书内工作目录的临时草稿文件（文件名 dpo_draft.md），不得直接改追踪或正文权威。
-5. 主会话保存正式正文，执行 `storyctl.py chapter check`，修复 blocking、人工判断 advisory；`tracking_commit.py draft` 和 `storyctl.py chapter commit` 成功才完成。
-6. 报告正文字数、已兑现剧情和追踪结果；无作者授权不写下一章。
+1. 首先执行 `python "{skill 根}/scripts/chapter_pipeline.py" --project "{书目录}" --chapter N --prepare-only`。它统一核验实际模型、启用的 LoRA、追踪状态和细纲，构建 Prompt。报告必须有 `pipeline_version: 2.1.0-dpo`，向作者展示版本和脚本路径；写作前须确认 `narrative-writer` 已注册。
+2. 返回 `tracking_init` 时，按脚本给出的模板和 `tracking-initialization.md` 填完当前核心角色状态，再加 `--init-input "{init.json}"` 重新准备。脚本会一次列出快照字段错误。已有追踪不重新初始化；已有正文但丢状态时停止恢复。
+3. 沿用 oh-story 写前资料筛选：阅读细纲、追踪、当前卷纲单元和必要设定。若返回 `context_prepare`，把本章必需的时代、制度、资源原文摘句写入工作目录 `dpo_context.json`（`schema_version:1`；`setting_excerpts` 每项只含 `source` 相对路径、`text` 原文），重跑准备命令。编译器验证摘录来自本书设定并嵌入四段式前情；不要转交未来真名、幕后秘密或无关全卷设定。审核 `dpo_prompt.json`，冲突先修规划。
+4. 按 `references/scene-handoff.md` 准备场景计划后交给 `narrative-writer`，运行 `chapter_pipeline.py --project "{书目录}" --chapter N --generate-prepared`。每次只生成一场；awaiting_scene_review 时主控核对正文、填写证据与交接事实。局部错误按 `references/scene-repair.md` 交回本地模型修订后重审；其他 blocked 保留失败稿并停止。不得把未完成的情节点当成已完成。
+5. `ready` 只是机器初筛。主会话必须读完整章，核对各情节点和事实连续性；内容有冲突仍停止。只有内容验收通过，才原样复制 dpo_draft.md 到正式正文并运行 `storyctl.py chapter check`（不加 `--fix-punctuation`）。检查器验证报告、Prompt 指纹及正文与草稿逐字一致；通过后才运行 Tracking Draft/Commit。
+6. 报告章节、`visible_chars_v1` 字数、检查和追踪结果；无作者授权不写下一章。
 
 > **新增物三级**（规划和写作共用）：
 > - **直接写**：微动作、过场、一次性路人、短对话和环境细节，不改变承诺与设定；无需记录。
@@ -55,5 +55,7 @@ https://huggingface.co/JiangLing-js/Qwen3.8-27B-Chinese-Xuanhuan-Novel-Writer-DP
 ## 正文退化检测
 正文由 `storyctl.py chapter check` 统一调用包括 `check-degeneration.js` 在内的退化检测工具；不另行跳过或手动略过检查。
 
-## 子 Agent 部署预检
-读取 `.story-deployed` 的 `agents_version`，当前基线为 `agents_version: 34`。版本不匹配时照常按文件存在性检查并 spawn；向作者用白话提示重新执行 story-setup。技术细节只进末尾「技术备注」：`Notice: agents bundle 版本不匹配`。版本号大于 34 时额外提示先更新 oh-story-claudecode。若 agent 文件缺失或运行时不暴露 custom agent，停止正文写作（DPO-only 不启用 solo/direct 回退），技术备注记 `Fallback: writer unavailable -> blocked`。 
+## 部署与兼容
+保留 oh-story 的 `.claude/agents/`、hooks、规则和部署标记。`claudeqwen` 启动器可用 `--agents` 显式注册项目内 `narrative-writer`，修复文件已存在但会话未暴露写手的问题；不删除或替换其他角色。独立预检完整命令为 `python "{skill 根}/scripts/preflight_dpo_writer.py" --project "{书目录}" --require-agent`；运行时仍以实际 Agent 调用结果为准。
+
+PowerShell 直接执行 `python "脚本路径" --project "书目录"`，不要再套 `pwsh -Command "...$dir..."`。每本书管线有进程锁，禁止并发覆盖 Prompt 和草稿。

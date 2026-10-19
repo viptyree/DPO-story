@@ -26,6 +26,14 @@ def _load_local_module(name: str, filename: str) -> Any:
 
 
 core = _load_local_module("story_wordcount_core", "wordcount_core.py")
+dpo_evidence = None
+
+
+def _dpo_evidence_module():
+    global dpo_evidence
+    if dpo_evidence is None:
+        dpo_evidence = _load_local_module("story_dpo_evidence", "dpo_evidence.py")
+    return dpo_evidence
 for _name in dir(core):
     if not _name.startswith("_"):
         globals()[_name] = getattr(core, _name)
@@ -92,6 +100,8 @@ def _remove_chapter_work_dir(project: Path, chapter: int) -> str | None:
     if path.is_symlink():
         path.unlink()
     elif path.is_dir():
+        if not path.resolve().is_relative_to(project.resolve()/'.story'/'work'):
+            raise OSError("拒绝清理实际路径在本书工作目录外的目录")
         shutil.rmtree(path)
     else:
         return None
@@ -273,8 +283,71 @@ def _record_over_baseline(project: Path, chapter: int, body_path: Path, actual: 
     path.write_text(json.dumps({"body_sha256": _body_digest(body_path), "actual": actual}), encoding="utf-8")
 
 
+def _check_dpo_provenance(project: Path, chapter: int, body_path: Path, outline_path: Path | None = None) -> None:
+    """A DPO chapter must be the exact draft accepted by the local generator."""
+    work = chapter_work_dir(project, chapter)
+    prompt_path = work / "dpo_prompt.json"
+    if not prompt_path.is_file():
+        try:
+            marker = project.resolve()/'.story'/'dpo-evidence'/f'第{chapter:03d}章'/'current.json'
+            archived = _dpo_evidence_module().archived_work(project, chapter) if marker.is_file() else None
+        except (OSError, ValueError) as exc:
+            raise ChapterRefused("DPO_PROVENANCE_MISMATCH", f"DPO证据归档无效：{exc}") from exc
+        if archived:
+            work = archived
+            prompt_path = work / "dpo_prompt.json"
+        else:
+            if outline_path and "〖事件骨架〗" in outline_path.read_text(encoding="utf-8"):
+                raise ChapterRefused("DPO_PROVENANCE_MISSING", "DPO细纲缺少生成证据，不能因临时目录已清理而回退旧流程")
+            return  # Legacy/non-DPO chapter workflow.
+    prompt = _read_json_object(prompt_path, "DPO prompt")
+    if prompt.get("writer_mode") != "dpo_only":
+        if outline_path and "〖事件骨架〗" in outline_path.read_text(encoding="utf-8"):
+            raise ChapterRefused("DPO_PROVENANCE_MISMATCH", "DPO细纲不能改用旧模式绕过来源核验")
+        return
+    report_path = work / "dpo_report.json"
+    if not report_path.is_file():
+        raise ChapterRefused("DPO_PROVENANCE_MISSING", "本章缺少本地 DPO 生成验收报告，不能检查或提交正式正文")
+    report = _read_json_object(report_path, "DPO generation report")
+    if report.get("scene_plan_sha256"):
+        plan_path = work / "dpo_scene_plan.json"
+        if not plan_path.is_file() or hashlib.sha256(plan_path.read_bytes()).hexdigest() != report["scene_plan_sha256"]:
+            raise ChapterRefused("DPO_PROVENANCE_MISMATCH", "分场计划已变化，不能提交旧稿")
+    if report.get("status") != "ready" or report.get("model") != "qwen3.8-27b-udq4-xuanhuan-dpo" or report.get("finish_reason") != "stop":
+        raise ChapterRefused("DPO_PROVENANCE_BLOCKED", "本地 DPO 草稿未通过生成门禁，不能使用主会话拼接的正文")
+    draft_path = work / "dpo_draft.md"
+    try:
+        prompt_hash = hashlib.sha256(prompt_path.read_bytes()).hexdigest()
+        draft_bytes = draft_path.read_bytes()
+        body_bytes = body_path.read_bytes()
+    except OSError as exc:
+        raise ChapterRefused("DPO_PROVENANCE_MISSING", f"DPO 草稿或正文缺失：{exc}") from exc
+    if report.get("prompt_sha256") != prompt_hash or report.get("draft_sha256") != hashlib.sha256(draft_bytes).hexdigest():
+        raise ChapterRefused("DPO_PROVENANCE_MISMATCH", "模型原稿与当前 Prompt 或生成报告不符")
+
+    # Author final-review is a first-class stage: if a registered author-final baseline
+    # exists, the committed body must be byte-identical to the author's final draft (not
+    # the raw model draft). The frozen dpo_draft.md stays archived as the model original.
+    baseline_path = work / "author_final.json"
+    if baseline_path.is_file():
+        baseline = _read_json_object(baseline_path, "author final baseline")
+        if baseline.get("schema_version") != 1:
+            raise ChapterRefused("DPO_PROVENANCE_MISMATCH", "作者终稿基线无效")
+        if baseline.get("model_original_sha256") != hashlib.sha256(draft_bytes).hexdigest():
+            raise ChapterRefused("DPO_PROVENANCE_MISMATCH", "作者终稿基线对应的模型原稿已变化")
+        if baseline.get("author_final_sha256") != hashlib.sha256(body_bytes).hexdigest():
+            raise ChapterRefused(
+                "DPO_PROVENANCE_MISMATCH",
+                "正式正文必须与已登记的作者终稿逐字一致；改动后重跑 story-write 的 author_final 步骤",
+            )
+    else:
+        if body_bytes != draft_bytes:
+            raise ChapterRefused("DPO_PROVENANCE_MISMATCH", "正式正文必须与当前 Prompt 对应的合格 DPO 草稿逐字一致")
+
+
 def chapter_check(project: Path, chapter: int, author_range: Any = None) -> dict[str, Any]:
     outline, body_path, target, effective_range = _project_files(project, chapter, author_range)
+    _check_dpo_provenance(project, chapter, body_path, outline)
     try:
         body = body_path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
@@ -412,6 +485,13 @@ def chapter_commit(
         project, chapter, resolution=resolution, author_range=author_range,
     )
     tracking = _tracking_module()
+    evidence_pointer = None
+    try:
+        if (chapter_work_dir(project, chapter)/"dpo_prompt.json").is_file():
+            _, body_path, _, _ = _project_files(project, chapter, author_range)
+            evidence_pointer = _dpo_evidence_module().archive_work(project, chapter, chapter_work_dir(project, chapter), body_path)
+    except (OSError, ValueError) as exc:
+        raise ChapterRefused("DPO_EVIDENCE_ARCHIVE_FAILED", f"证据归档失败，未提交追踪：{exc}") from exc
     state = _tracking_call(tracking.apply_transaction, project, document)
     checked["tracking_committed"] = state["last_committed_chapter"] >= chapter
     checked["next_chapter_started"] = state["last_committed_chapter"] > chapter
@@ -419,10 +499,14 @@ def chapter_commit(
     checked["mode"] = document.get("mode")
     # The commit is already durable; a cleanup failure is reported, never turned into a failed commit.
     try:
+        if evidence_pointer:
+            checked["dpo_evidence_archive"] = _dpo_evidence_module().publish(project, chapter, evidence_pointer)
         checked["work_dir_removed"] = _remove_chapter_work_dir(project, chapter)
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         checked["work_dir_removed"] = None
         checked["work_dir_cleanup_error"] = str(exc)
+        if evidence_pointer and "dpo_evidence_archive" not in checked:
+            checked["dpo_evidence_publish_error"] = str(exc)
     return checked
 
 
@@ -537,6 +621,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _wordcount_command(args, author_range)
     try:
         if args.chapter_command == "check":
+            if args.fix_punctuation:
+                outline, body_path, _, _ = _project_files(args.project, args.chapter, author_range)
+                _check_dpo_provenance(args.project, args.chapter, body_path, outline)
+                prompt_path = chapter_work_dir(args.project, args.chapter) / "dpo_prompt.json"
+                marker = args.project.resolve()/'.story'/'dpo-evidence'/f'第{args.chapter:03d}章'/'current.json'
+                if (marker.is_file() or "〖事件骨架〗" in outline.read_text(encoding="utf-8")
+                        or (prompt_path.is_file() and _read_json_object(prompt_path, "DPO prompt").get("writer_mode") == "dpo_only")):
+                    raise ChapterRefused("DPO_IMMUTABLE", "DPO 正文不允许 --fix-punctuation；请重新生成合格草稿")
             fixed = fix_punctuation(args.project, args.chapter, author_range) if args.fix_punctuation else None
             result = chapter_check(args.project, args.chapter, author_range)
             if fixed is not None:

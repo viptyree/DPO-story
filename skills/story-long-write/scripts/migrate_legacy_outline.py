@@ -77,4 +77,8 @@ def main():
    print("已迁移："+str(src)+"\n备份："+str(bak))
   else:print(out)
  except (ValueError,OSError) as e:print("ERROR: "+str(e),file=sys.stderr);sys.exit(2)
-if __name__=="__main__":main()
+if __name__=="__main__":
+ if sys.platform=="win32":
+  sys.stdout.reconfigure(encoding="utf-8")
+  sys.stderr.reconfigure(encoding="utf-8")
+ main()
